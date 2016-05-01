@@ -9,3 +9,4 @@ class ManagerTestCase(TestCase):
         result = (Food.objects
                   .filter(name__similar='Chikcen')
                   .exists())
+        # TODO some assertions
