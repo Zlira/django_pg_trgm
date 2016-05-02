@@ -2,7 +2,7 @@ from django.db.migrations.operations.base import Operation
 
 
 class CreatedThreegramIndex(Operation):
-    index_name_suffix = 'trgm'
+    index_name_suffix = '_trgm'
 
     def __init__(self, model_name, field_name, index_type='GIN'):
         assert index_type in ('GiST', 'GIN'), ''
@@ -53,9 +53,20 @@ class CreatedThreegramIndex(Operation):
         }
         schema_editor.execute(sql)
 
-    def database_backwards(self, app_label, schema_editor, from_state, to_state):
-        pass
+    def database_backwards(self, app_label, schema_editor,
+                           from_state, to_state):
+        to_model = to_state.apps.get_model(app_label, self.model_name)
+        field = to_model._meta.get_field(self.field_name)
+        index_name = self._get_index_name(schema_editor, to_model, field)
+        schema_editor.execute(
+            schema_editor.sql_delete_index % {
+                'name': schema_editor.quote_name(index_name)
+            }
+        )
 
     def describe(self):
-        pass
+        return (
+            'Create threegram {index_type} index for field "{field_name}" '
+            'of model "{model_name}".'
+        ).format(vars(self))
 
